@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crown Hotel Installation PO Management System</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel CDN for inline JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              200: '#bae0fd',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#0f3854',
+            },
+            hotel: {
+              gold: '#D4AF37',
+              navy: '#1B2A4A',
+              slate: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    /* Custom scrollbar styling for high-density tables */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Pipeline connecting animation lines */
+    .flow-line-pulse {
+      background: linear-gradient(90deg, #e2e8f0 0%, #3b82f6 50%, #e2e8f0 100%);
+      background-size: 200% 100%;
+      animation: flowPulse 2s infinite linear;
+    }
+    @keyframes flowPulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    // --- SVG ICON COMPONENTS ---
+    const IconBox = ({ name, className = "w-5 h-5" }) => {
+      const icons = {
+        package: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />,
+        truck: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1e2 0m0 0h2.586a1 1 0 00.707-.293l2.414-2.414a1 1 0 00.293-.707V12a1 1 0 00-1-1h-2.586" />,
+        anchor: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8a3 3 0 100-6 3 3 0 000 6zm0 0v11m0 0H7m5 0h5M5 12a7 7 0 0014 0" />,
+        checkCircle: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />,
+        clock: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
+        alertTriangle: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />,
+        dollar: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+        building: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0V11m0 0V8a1 1 0 011-1h2a1 1 0 011 1v3m-4 0h4m0 0v10" />,
+        users: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5 5 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />,
+        calendar: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />,
+        filter: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />,
+        plus: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />,
+        search: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />,
+        fileText: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
+        mapPin: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z" />,
+        chevronRight: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />,
+        arrowRight: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />,
+        x: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />,
+        tool: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      };
+      return (
+        <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {icons[name] || icons.fileText}
+        </svg>
+      );
+    };
+
+    // Initial Supplier Profiles
+    const INITIAL_SUPPLIERS = [
+      { id: 'SUP-001', name: 'LuxeCraft FF&E Furniture Co.', category: 'FF&E - Bedroom & Living', contact: 'Elena Vance', email: 'elena@luxecraft.com', phone: '+1 (555) 234-8901', rating: 4.8, location: 'Milan, Italy', leadTimeAvg: '45 Days', status: 'Approved' },
+      { id: 'SUP-002', name: 'Nordic Hospitality Lighting', category: 'Decorative Lighting', contact: 'Soren Lind', email: 'soren@nordiclight.dk', phone: '+45 32 45 67', rating: 4.6, location: 'Copenhagen, Denmark', leadTimeAvg: '30 Days', status: 'Approved' },
+      { id: 'SUP-003', name: 'Apex Commercial Kitchens Ltd', category: 'Kitchen & F&B Heavy Equipment', contact: 'Marcus Thorne', email: 'mthorne@apexkitchens.com', phone: '+1 (555) 987-1234', rating: 4.9, location: 'Chicago, USA', leadTimeAvg: '60 Days', status: 'Approved' },
+      { id: 'SUP-004', name: 'Velvet & Silk Textiles Group', category: 'Drapery, Curtains & Linens', contact: 'Aria Chen', email: 'aria@velvetsilk.com', phone: '+86 21 6888 1234', rating: 4.4, location: 'Shanghai, China', leadTimeAvg: '25 Days', status: 'Under Review' },
+      { id: 'SUP-005', name: 'ProMedia Hospitality AV & Smart', category: 'IT/AV Systems & Guest Controls', contact: 'David Miller', email: 'd.miller@promedia-av.com', phone: '+1 (555) 432-1098', rating: 4.7, location: 'Austin, TX, USA', leadTimeAvg: '20 Days', status: 'Approved' },
+      { id: 'SUP-006', name: 'Sanitary & Luxury Bath Fixtures', category: 'Plumbing & Guest Bathrooms', contact: 'Chloe Dubois', email: 'cdubois@bathluxury.fr', phone: '+33 1 42 68 55', rating: 4.5, location: 'Lyon, France', leadTimeAvg: '40 Days', status: 'Approved' }
+    ];
+
+    // Status Flow Process Definition (7 Core Stages for Hotel Installation)
+    const FLOW_STAGES = [
+      { id: 'draft', title: '1. Requisition & Draft', icon: 'fileText', color: 'bg-slate-100 text-slate-700 border-slate-300', activeBg: 'bg-slate-700 text-white' },
+      { id: 'issued', title: '2. Issued & Confirmed', icon: 'checkCircle', color: 'bg-blue-50 text-blue-700 border-blue-200', activeBg: 'bg-blue-600 text-white' },
+      { id: 'production', title: '3. Factory Production', icon: 'tool', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', activeBg: 'bg-indigo-600 text-white' },
+      { id: 'transit', title: '4. Shipping & Transit', icon: 'truck', color: 'bg-amber-50 text-amber-700 border-amber-200', activeBg: 'bg-amber-500 text-white' },
+      { id: 'customs', title: '5. Customs & Port', icon: 'anchor', color: 'bg-purple-50 text-purple-700 border-purple-200', activeBg: 'bg-purple-600 text-white' },
+      { id: 'delivered', title: '6. Site Delivery', icon: 'mapPin', color: 'bg-teal-50 text-teal-700 border-teal-200', activeBg: 'bg-teal-600 text-white' },
+      { id: 'installed', title: '7. Installed & Accepted', icon: 'package', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', activeBg: 'bg-emerald-600 text-white' }
+    ];
+
+    // Initial PO Mock Records
+    const INITIAL_POS = [
+      {
+        id: 'PO-2026-081',
+        poNumber: 'PO-2026-081',
+        title: 'Executive Suite Kingsize Beds & Headboards',
+        supplierId: 'SUP-001',
+        supplierName: 'LuxeCraft FF&E Furniture Co.',
+        hotelZone: 'Tower A - Executive Suites (Fl 10-14)',
+        category: 'FF&E',
+        status: 'transit',
+        budgetCost: 145000,
+        committedCost: 142500,
+        freightCost: 8500,
+        customsDuty: 4200,
+        orderDate: '2026-05-10',
+        shipDate: '2026-07-20',
+        etaDate: '2026-08-28',
+        installTargetDate: '2026-09-10',
+        carrier: 'Maersk Ocean Line',
+        trackingNo: 'MAEU-98234109',
+        vesselName: 'MSC Isabella / V.204B',
+        portOfEntry: 'Port of Long Beach, USA',
+        riskFlag: false,
+        notes: 'Custom teak wood frames. Third-party inspection report passed in Milan on July 15.',
+        items: [
+          { name: 'Custom King Bed Frame & Leather Headboard', qty: 40, unitPrice: 2800 },
+          { name: 'Nightstands - Walnut finish', qty: 80, unitPrice: 380 }
+        ]
+      },
+      {
+        id: 'PO-2026-082',
+        poNumber: 'PO-2026-082',
+        title: 'Grand Ballroom Chandelier & Wall Sconces',
+        supplierId: 'SUP-002',
+        supplierName: 'Nordic Hospitality Lighting',
+        hotelZone: 'Grand Ballroom & Conference Hub',
+        category: 'Decorative Lighting',
+        status: 'customs',
+        budgetCost: 98000,
+        committedCost: 96000,
+        freightCost: 5400,
+        customsDuty: 3800,
+        orderDate: '2026-05-25',
+        shipDate: '2026-07-15',
+        etaDate: '2026-08-20',
+        installTargetDate: '2026-09-01',
+        carrier: 'DHL Global Forwarding',
+        trackingNo: 'DHL-8871239-US',
+        vesselName: 'Air Freight Cargo Flight 802',
+        portOfEntry: 'JFK International Customs Hub',
+        riskFlag: true,
+        riskReason: 'Held at customs for import certification verification.',
+        notes: 'Custom crystal drop fixture. Fragile handling required during unloading.',
+        items: [
+          { name: 'Tiered Brass Chandelier 4m Diameter', qty: 2, unitPrice: 36000 },
+          { name: 'Matching Art-Deco Wall Sconces', qty: 24, unitPrice: 1000 }
+        ]
+      },
+      {
+        id: 'PO-2026-083',
+        poNumber: 'PO-2026-083',
+        title: 'Main Kitchen Heavy Cooking Range & Ovens',
+        supplierId: 'SUP-003',
+        supplierName: 'Apex Commercial Kitchens Ltd',
+        hotelZone: 'Ground Floor Kitchen & Bakery',
+        category: 'Kitchen & Catering',
+        status: 'delivered',
+        budgetCost: 210000,
+        committedCost: 205000,
+        freightCost: 11000,
+        customsDuty: 0,
+        orderDate: '2026-04-12',
+        shipDate: '2026-06-30',
+        etaDate: '2026-08-10',
+        installTargetDate: '2026-08-25',
+        carrier: 'FedEx Freight Heavy',
+        trackingNo: 'FX-909231849',
+        vesselName: 'Truck Convoy #44',
+        portOfEntry: 'Domestic Overland',
+        riskFlag: false,
+        notes: 'Delivered to hotel loading bay B. Heavy crane required for position placement on Aug 22.',
+        items: [
+          { name: '8-Burner Commercial Gas Suite with Griddle', qty: 3, unitPrice: 28000 },
+          { name: 'Combi Steam Ovens Touchscreen', qty: 4, unitPrice: 18000 },
+          { name: 'Stainless Steel Prep Counters', qty: 15, unitPrice: 3200 }
+        ]
+      },
+      {
+        id: 'PO-2026-084',
+        poNumber: 'PO-2026-084',
+        title: 'Guestrooms Blackout Drapes & Sheers',
+        supplierId: 'SUP-004',
+        supplierName: 'Velvet & Silk Textiles Group',
+        hotelZone: 'Guestroom Tower B (Fl 2-9)',
+        category: 'Drapery & Fabrics',
+        status: 'production',
+        budgetCost: 65000,
+        committedCost: 62000,
+        freightCost: 4000,
+        customsDuty: 2100,
+        orderDate: '2026-06-15',
+        shipDate: '2026-09-01',
+        etaDate: '2026-09-22',
+        installTargetDate: '2026-10-05',
+        carrier: 'Cosco Shipping Container',
+        trackingNo: 'COSU-62849102',
+        vesselName: 'Cosco Development V.112',
+        portOfEntry: 'Port of Seattle',
+        riskFlag: false,
+        notes: 'Fabric flame-retardant NFPA 701 certification received.',
+        items: [
+          { name: 'Custom Motorized Blackout Drapes', qty: 180, unitPrice: 260 },
+          { name: 'Linen Sheers with motorized tracks', qty: 180, unitPrice: 85 }
+        ]
+      },
+      {
+        id: 'PO-2026-085',
+        poNumber: 'PO-2026-085',
+        title: 'Lobby Interactive Video Wall & Digital Signage',
+        supplierId: 'SUP-005',
+        supplierName: 'ProMedia Hospitality AV & Smart',
+        hotelZone: 'Lobby & Reception Lounge',
+        category: 'IT/AV Systems',
+        status: 'installed',
+        budgetCost: 82000,
+        committedCost: 79500,
+        freightCost: 2200,
+        customsDuty: 0,
+        orderDate: '2026-04-01',
+        shipDate: '2026-05-20',
+        etaDate: '2026-06-05',
+        installTargetDate: '2026-07-15',
+        carrier: 'UPS Freight Direct',
+        trackingNo: '1Z9999999999999999',
+        vesselName: 'Overland Logistics',
+        portOfEntry: 'Domestic Air Express',
+        riskFlag: false,
+        notes: 'Fully installed, calibrated, and signed off by Hotel IT Director.',
+        items: [
+          { name: '1.2mm MicroLED Wall Panel 4x3 meters', qty: 1, unitPrice: 65000 },
+          { name: 'Digital Wayfinding Displays 55"', qty: 6, unitPrice: 2400 }
+        ]
+      },
+      {
+        id: 'PO-2026-086',
+        poNumber: 'PO-2026-086',
+        title: 'Penthouse Bath Fixtures & Rain Showers',
+        supplierId: 'SUP-006',
+        supplierName: 'Sanitary & Luxury Bath Fixtures',
+        hotelZone: 'Penthouse & Royal Suites (Fl 15)',
+        category: 'Plumbing & Bathroom',
+        status: 'issued',
+        budgetCost: 74000,
+        committedCost: 74000,
+        freightCost: 3500,
+        customsDuty: 1800,
+        orderDate: '2026-07-28',
+        shipDate: '2026-09-10',
+        etaDate: '2026-10-01',
+        installTargetDate: '2026-10-20',
+        carrier: 'CMA CGM Cargo',
+        trackingNo: 'CMAC-8812304',
+        vesselName: 'CMA CGM Antoine',
+        portOfEntry: 'Port of Oakland',
+        riskFlag: false,
+        notes: 'Deposit 30% paid. Tech drawing approval completed on Aug 2.',
+        items: [
+          { name: 'Brushed Gold Ceiling Mount Rain Shower head', qty: 12, unitPrice: 3200 },
+          { name: 'Freestanding Stone Composite Bathtub', qty: 6, unitPrice: 5900 }
+        ]
+      },
+      {
+        id: 'PO-2026-087',
+        poNumber: 'PO-2026-087',
+        title: 'Outdoor Poolside Cabanas & Sun Loungers',
+        supplierId: 'SUP-001',
+        supplierName: 'LuxeCraft FF&E Furniture Co.',
+        hotelZone: 'Rooftop Pool & Sunset Bar',
+        category: 'FF&E',
+        status: 'draft',
+        budgetCost: 55000,
+        committedCost: 53800,
+        freightCost: 3200,
+        customsDuty: 1200,
+        orderDate: '2026-08-15',
+        shipDate: '2026-09-25',
+        etaDate: '2026-10-15',
+        installTargetDate: '2026-11-01',
+        carrier: 'Pending Logistics Quote',
+        trackingNo: 'TBD',
+        vesselName: 'TBD',
+        portOfEntry: 'TBD',
+        riskFlag: false,
+        notes: 'Draft specification undergoing General Manager sign-off.',
+        items: [
+          { name: 'Teak Weatherproof Cabana with Sunbrella Curtains', qty: 8, unitPrice: 4800 },
+          { name: 'Ergonomic Pool Loungers', qty: 30, unitPrice: 500 }
+        ]
+      }
+    ];
+
+    function App() {
+      const [pos, setPos] = useState(INITIAL_POS);
+      const [suppliers, setSuppliers] = useState(INITIAL_SUPPLIERS);
+      const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'suppliers', 'shipping', 'costs', 'schedule'
+      
+      // Filter states
+      const [selectedStage, setSelectedStage] = useState('all'); // Flowchart filter stage
+      const [searchTerm, setSearchTerm] = useState('');
+      const [supplierFilter, setSupplierFilter] = useState('all');
+      const [zoneFilter, setZoneFilter] = useState('all');
+      const [categoryFilter, setCategoryFilter] = useState('all');
+      
+      // Modals
+      const [selectedPoModal, setSelectedPoModal] = useState(null);
+      const [showCreatePoModal, setShowCreatePoModal] = useState(false);
+      const [showCreateSupplierModal, setShowCreateSupplierModal] = useState(false);
+      const [toastMessage, setToastMessage] = useState(null);
+
+      // Toast helper
+      const triggerToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 3500);
+      };
+
+      // Derived Statistics
+      const stats = useMemo(() => {
+        const totalBudget = pos.reduce((acc, item) => acc + item.budgetCost, 0);
+        const totalCommitted = pos.reduce((acc, item) => acc + item.committedCost + item.freightCost + item.customsDuty, 0);
+        const activeShipments = pos.filter(p => p.status === 'transit' || p.status === 'customs').length;
+        const delayedOrRisk = pos.filter(p => p.riskFlag).length;
+        const installedCount = pos.filter(p => p.status === 'installed').length;
+        const totalPOs = pos.length;
+        
+        return {
+          totalBudget,
+          totalCommitted,
+          variance: totalBudget - totalCommitted,
+          activeShipments,
+          delayedOrRisk,
+          installedCount,
+          totalPOs
+        };
+      }, [pos]);
+
+      // Stage Breakdown Counts & Values for the Flow Chart
+      const stageSummaries = useMemo(() => {
+        const summaryMap = {};
+        FLOW_STAGES.forEach(st => {
+          summaryMap[st.id] = { count: 0, totalValue: 0, riskCount: 0 };
+        });
+
+        pos.forEach(po => {
+          if (summaryMap[po.status]) {
+            summaryMap[po.status].count += 1;
+            summaryMap[po.status].totalValue += (po.committedCost + po.freightCost + po.customsDuty);
+            if (po.riskFlag) summaryMap[po.status].riskCount += 1;
+          }
+        });
+
+        return summaryMap;
+      }, [pos]);
+
+      // Filtered PO list based on Flowchart & Dropdown Filters
+      const filteredPOs = useMemo(() => {
+        return pos.filter(po => {
+          // Flowchart stage filter
+          if (selectedStage !== 'all' && po.status !== selectedStage) return false;
+          
+          // Dropdown filters
+          if (supplierFilter !== 'all' && po.supplierId !== supplierFilter) return false;
+          if (zoneFilter !== 'all' && po.hotelZone !== zoneFilter) return false;
+          if (categoryFilter !== 'all' && po.category !== categoryFilter) return false;
+
+          // Search term
+          if (searchTerm.trim() !== '') {
+            const query = searchTerm.toLowerCase();
+            const matchPo = po.poNumber.toLowerCase().includes(query);
+            const matchTitle = po.title.toLowerCase().includes(query);
+            const matchSupplier = po.supplierName.toLowerCase().includes(query);
+            const matchZone = po.hotelZone.toLowerCase().includes(query);
+            if (!matchPo && !matchTitle && !matchSupplier && !matchZone) return false;
+          }
+
+          return true;
+        });
+      }, [pos, selectedStage, supplierFilter, zoneFilter, categoryFilter, searchTerm]);
+
+      // Handle updating PO stage directly
+      const handleUpdateStage = (poId, newStage) => {
+        setPos(prev => prev.map(p => {
+          if (p.id === poId) {
+            return { ...p, status: newStage };
+          }
+          return p;
+        }));
+        triggerToast(`PO ${poId} moved to ${FLOW_STAGES.find(s => s.id === newStage)?.title}`);
+      };
+
+      // Unique Zones list for filter
+      const uniqueZones = useMemo(() => Array.from(new Set(pos.map(p => p.hotelZone))), [pos]);
+      const uniqueCategories = useMemo(() => Array.from(new Set(pos.map(p => p.category))), [pos]);
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-50 pb-12">
+          {/* Toast Notification Banner */}
+          {toastMessage && (
+            <div className="fixed bottom-5 right-5 z-50 bg-hotel-navy text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-3 border border-amber-400/40 animate-bounce">
+              <IconBox name="checkCircle" className="w-5 h-5 text-amber-400" />
+              <span className="font-medium text-sm">{toastMessage}</span>
+            </div>
+          )}
+
+          {}
+          {/* Top Navigation Bar */}
+          <header className="bg-hotel-navy text-white shadow-md border-b border-slate-800 sticky top-0 z-30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16">
+                <div className="flex items-center gap-3">
+                  <div className="bg-amber-500 p-2 rounded-lg text-slate-900 font-bold flex items-center justify-center">
+                    <IconBox name="building" className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h1 className="font-extrabold text-lg tracking-wide text-white flex items-center gap-2">
+                      CROWN HOTEL <span className="text-amber-400 text-xs font-normal px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/30">PRE-OPENING INSTALLATION</span>
+                    </h1>
+                    <p className="text-xs text-slate-300">Procurement & Site Logistics Operations Command</p>
+                  </div>
+                </div>
+
+                {/* Primary Tabs */}
+                <nav className="hidden md:flex items-center space-x-1">
+                  {[
+                    { id: 'dashboard', label: 'Pipeline & POs', icon: 'package' },
+                    { id: 'po-details', label: 'All PO Details', icon: 'fileText' },
+                    { id: 'suppliers', label: 'Suppliers Profile', icon: 'users' },
+                    { id: 'shipping', label: 'Shipping & Freight', icon: 'truck' },
+                    { id: 'costs', label: 'Cost Management', icon: 'dollar' },
+                    { id: 'schedule', label: 'Site Schedule', icon: 'calendar' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-sm font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-amber-500 text-slate-950 shadow-sm font-semibold'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <IconBox name={tab.icon} className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowCreatePoModal(true)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs sm:text-sm px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <IconBox name="plus" className="w-4 h-4" />
+                    <span>New Purchase Order</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Tab Strip */}
+            <div className="md:hidden flex overflow-x-auto bg-slate-900 px-2 py-1.5 border-t border-slate-800 text-xs">
+              {[
+                { id: 'dashboard', label: 'Pipeline' },
+                { id: 'po-details', label: 'PO Details' },
+                { id: 'suppliers', label: 'Suppliers' },
+                { id: 'shipping', label: 'Shipping' },
+                { id: 'costs', label: 'Costs' },
+                { id: 'schedule', label: 'Schedule' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-1.5 rounded whitespace-nowrap mr-1 ${
+                    activeTab === tab.id ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </header>
+
+          {}
+          {/* Main Container */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex-1 w-full">
+            {/* Top KPI Metrics Overview Header */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-semibold uppercase text-slate-500">Total Approved Budget</span>
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><IconBox name="dollar" className="w-4 h-4" /></div>
+                </div>
+                <div className="mt-2 text-xl font-bold text-slate-800">${stats.totalBudget.toLocaleString()}</div>
+                <div className="text-[11px] text-slate-500 mt-1">Target Opening: Q4 2026</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-semibold uppercase text-slate-500">Committed Spend</span>
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><IconBox name="fileText" className="w-4 h-4" /></div>
+                </div>
+                <div className="mt-2 text-xl font-bold text-slate-800">${stats.totalCommitted.toLocaleString()}</div>
+                <div className={`text-[11px] font-semibold mt-1 ${stats.variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {stats.variance >= 0 ? `Under budget by $${stats.variance.toLocaleString()}` : `Over budget by $${Math.abs(stats.variance).toLocaleString()}`}
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-semibold uppercase text-slate-500">In Freight / Customs</span>
+                  <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><IconBox name="truck" className="w-4 h-4" /></div>
+                </div>
+                <div className="mt-2 text-xl font-bold text-slate-800">{stats.activeShipments} <span className="text-xs text-slate-500 font-normal">Active Shipments</span></div>
+                <div className="text-[11px] text-amber-600 font-medium mt-1">On-sea / Port clearance</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-semibold uppercase text-slate-500">Delivered & Installed</span>
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><IconBox name="checkCircle" className="w-4 h-4" /></div>
+                </div>
+                <div className="mt-2 text-xl font-bold text-emerald-700">{stats.installedCount} / {stats.totalPOs}</div>
+                <div className="text-[11px] text-slate-500 mt-1">{Math.round((stats.installedCount/stats.totalPOs)*100 || 0)}% Site Readiness</div>
+              </div>
+
+              <div className="col-span-2 md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-semibold uppercase text-slate-500">Logistics Alerts</span>
+                  <div className={`p-2 rounded-lg ${stats.delayedOrRisk > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>
+                    <IconBox name="alertTriangle" className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className={`mt-2 text-xl font-bold ${stats.delayedOrRisk > 0 ? 'text-rose-600' : 'text-slate-800'}`}>
+                  {stats.delayedOrRisk} {stats.delayedOrRisk === 1 ? 'Issue' : 'Issues'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">Requires immediate action</div>
+              </div>
+            </div>
+
+            {}
+            {/* CENTRAL FLOW CHART PIPELINE DISPLAY */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-ping"></span>
+                    Hotel Installation Status Flowchart
+                  </h2>
+                  <p className="text-xs text-slate-500">Interactive procurement-to-installation pipeline. Click any process node to filter PO records below.</p>
+                </div>
+                {selectedStage !== 'all' && (
+                  <button
+                    onClick={() => setSelectedStage('all')}
+                    className="self-start sm:self-auto text-xs text-slate-600 hover:text-amber-600 bg-slate-100 px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1"
+                  >
+                    <IconBox name="x" className="w-3.5 h-3.5" /> Clear Stage Filter
+                  </button>
+                )}
+              </div>
+
+              {/* FLOWCHART PIPELINE GRAPHICAL NODES */}
+              <div className="overflow-x-auto pb-2 pt-1">
+                <div className="min-w-[920px] flex items-center justify-between relative px-2">
+                  {FLOW_STAGES.map((stage, idx) => {
+                    const summary = stageSummaries[stage.id] || { count: 0, totalValue: 0, riskCount: 0 };
+                    const isSelected = selectedStage === stage.id;
+
+                    return (
+                      <React.Fragment key={stage.id}>
+                        {/* Process Card / Node */}
+                        <div
+                          onClick={() => setSelectedStage(isSelected ? 'all' : stage.id)}
+                          className={`cursor-pointer w-32 flex-shrink-0 flex flex-col items-center p-3 rounded-xl transition-all duration-200 border-2 relative ${
+                            isSelected
+                              ? `${stage.activeBg} ring-4 ring-amber-400/30 scale-105 shadow-md border-transparent z-10`
+                              : `${stage.color} hover:border-slate-400 hover:shadow-sm`
+                          }`}
+                        >
+                          {/* Stage Number Badge */}
+                          <div className={`p-2 rounded-full mb-2 ${isSelected ? 'bg-white/20 text-white' : 'bg-white shadow-xs'}`}>
+                            <IconBox name={stage.icon} className="w-5 h-5" />
+                          </div>
+
+                          <span className={`text-[11px] font-bold text-center line-clamp-1 leading-snug ${isSelected ? 'text-white' : 'text-slate-800'}`}>
+                            {stage.title}
+                          </span>
+
+                          <div className="mt-2 flex flex-col items-center">
+                            <span className={`text-base font-extrabold ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                              {summary.count} <span className="text-[10px] font-normal opacity-80">POs</span>
+                            </span>
+                            <span className={`text-[10px] font-medium mt-0.5 ${isSelected ? 'text-amber-200' : 'text-slate-500'}`}>
+                              ${(summary.totalValue / 1000).toFixed(0)}k
+                            </span>
+                          </div>
+
+                          {/* Risk Warning Badge on Node */}
+                          {summary.riskCount > 0 && (
+                            <span className="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-0.5">
+                              <IconBox name="alertTriangle" className="w-2.5 h-2.5" />
+                              {summary.riskCount}
+                            </span>
+                          )}
+
+                          {isSelected && (
+                            <div className="absolute -bottom-2.5 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-amber-500"></div>
+                          )}
+                        </div>
+
+                        {/* Connector Line between Nodes */}
+                        {idx < FLOW_STAGES.length - 1 && (
+                          <div className="flex-1 flex items-center justify-center px-1">
+                            <div className="h-1 w-full bg-slate-200 relative rounded-full overflow-hidden">
+                              <div className="absolute inset-0 flow-line-pulse"></div>
+                            </div>
+                            <IconBox name="chevronRight" className="w-4 h-4 text-slate-400 flex-shrink-0 -ml-1" />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Status Flow Helper Footer */}
+              <div className="mt-3 text-center text-xs text-slate-500 flex items-center justify-center gap-4 bg-slate-50 py-1.5 rounded-lg border border-slate-100">
+                <span className="font-semibold text-slate-700">Pipeline Summary:</span>
+                <span>{stats.totalPOs} Total POs</span>
+                <span>•</span>
+                <span>Showing: <strong className="text-slate-800">{selectedStage === 'all' ? 'All Stages' : FLOW_STAGES.find(s => s.id === selectedStage)?.title}</strong></span>
+              </div>
+            </div>
+
+            {}
+            {/* MAIN TAB CONTENTS */}
+
+            {/* TAB 1: PIPELINE & PO GRID VIEW */}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-4">
+                {/* Filters & Control Bar */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <IconBox name="search" className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search PO#, item title, supplier or hotel zone..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Supplier Filter */}
+                    <select
+                      value={supplierFilter}
+                      onChange={(e) => setSupplierFilter(e.target.value)}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <option value="all">All Suppliers</option>
+                      {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+
+                    {/* Zone Filter */}
+                    <select
+                      value={zoneFilter}
+                      onChange={(e) => setZoneFilter(e.target.value)}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <option value="all">All Hotel Zones</option>
+                      {uniqueZones.map(z => <option key={z} value={z}>{z}</option>)}
+                    </select>
+
+                    {/* Category Filter */}
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <option value="all">All Categories</option>
+                      {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+
+                    {(searchTerm || supplierFilter !== 'all' || zoneFilter !== 'all' || categoryFilter !== 'all') && (
+                      <button
+                        onClick={() => { setSearchTerm(''); setSupplierFilter('all'); setZoneFilter('all'); setCategoryFilter('all'); }}
+                        className="text-xs text-rose-600 hover:text-rose-800 font-medium px-2 py-1"
+                      >
+                        Reset Filters
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {}
+                {/* PO Table */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-600 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200">
+                          <th className="py-3 px-4">PO # / Title</th>
+                          <th className="py-3 px-4">Supplier & Zone</th>
+                          <th className="py-3 px-4">Current Flow Stage</th>
+                          <th className="py-3 px-4 text-right">Committed Total</th>
+                          <th className="py-3 px-4">Key Logistics Dates</th>
+                          <th className="py-3 px-4">Carrier / Tracking</th>
+                          <th className="py-3 px-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                        {filteredPOs.length === 0 ? (
+                          <tr>
+                            <td colSpan="7" className="text-center py-12 text-slate-400">
+                              <IconBox name="package" className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                              <p className="font-medium text-slate-600">No Purchase Orders found matching filters</p>
+                              <p className="text-xs mt-1">Try resetting filters or clear active stage selection.</p>
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredPOs.map((po) => {
+                            const stageObj = FLOW_STAGES.find(s => s.id === po.status);
+                            const totalVal = po.committedCost + po.freightCost + po.customsDuty;
+
+                            return (
+                              <tr key={po.id} className="hover:bg-slate-50/80 transition-colors">
+                                {/* PO Number & Title */}
+                                <td className="py-3 px-4">
+                                  <div className="flex items-start gap-2">
+                                    {po.riskFlag && (
+                                      <span className="mt-0.5 text-rose-500" title={po.riskReason || 'Logistics Risk Alert'}>
+                                        <IconBox name="alertTriangle" className="w-4 h-4" />
+                                      </span>
+                                    )}
+                                    <div>
+                                      <span className="font-bold text-slate-900 block hover:text-amber-600 cursor-pointer" onClick={() => setSelectedPoModal(po)}>
+                                        {po.poNumber}
+                                      </span>
+                                      <span className="text-slate-600 line-clamp-1 max-w-xs">{po.title}</span>
+                                      <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded">
+                                        {po.category}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Supplier & Zone */}
+                                <td className="py-3 px-4">
+                                  <div className="font-semibold text-slate-800">{po.supplierName}</div>
+                                  <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <IconBox name="building" className="w-3 h-3 text-slate-400" />
+                                    {po.hotelZone}
+                                  </div>
+                                </td>
+
+                                {/* Status Stage Selector */}
+                                <td className="py-3 px-4">
+                                  <select
+                                    value={po.status}
+                                    onChange={(e) => handleUpdateStage(po.id, e.target.value)}
+                                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer focus:outline-none ${stageObj?.color || 'bg-slate-100'}`}
+                                  >
+                                    {FLOW_STAGES.map(st => (
+                                      <option key={st.id} value={st.id}>{st.title}</option>
+                                    ))}
+                                  </select>
+                                </td>
+
+                                {/* Cost Breakdown Summary */}
+                                <td className="py-3 px-4 text-right font-bold text-slate-900">
+                                  ${totalVal.toLocaleString()}
+                                  <div className="text-[10px] text-slate-400 font-normal">
+                                    Po: ${po.committedCost.toLocaleString()} | Frt: ${po.freightCost.toLocaleString()}
+                                  </div>
+                                </td>
+
+                                {/* Dates */}
+                                <td className="py-3 px-4 text-[11px]">
+                                  <div><span className="text-slate-400">ETA Port:</span> <strong className="text-slate-700">{po.etaDate}</strong></div>
+                                  <div><span className="text-slate-400">Install Target:</span> <strong className="text-slate-700">{po.installTargetDate}</strong></div>
+                                </td>
+
+                                {/* Shipping info */}
+                                <td className="py-3 px-4 text-[11px]">
+                                  <div className="font-medium text-slate-800">{po.carrier}</div>
+                                  <div className="text-slate-500 font-mono text-[10px]">{po.trackingNo}</div>
+                                </td>
+
+                                {/* Action button */}
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    onClick={() => setSelectedPoModal(po)}
+                                    className="bg-slate-100 hover:bg-amber-500 hover:text-slate-950 text-slate-700 p-1.5 rounded-lg transition-all"
+                                    title="View Full PO Details"
+                                  >
+                                    <IconBox name="fileText" className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: ALL PO DETAILS VIEW */}
+            {activeTab === 'po-details' && (
+              <div className="space-y-6">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base">All Purchase Order Details Log</h3>
+                    <p className="text-xs text-slate-500">Full specification breakdown, supplier contact details, line items, and logistics itineraries.</p>
+                  </div>
+                  <div className="relative min-w-[280px]">
+                    <IconBox name="search" className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Filter details by PO#, item, zone..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {filteredPOs.length === 0 ? (
+                    <div className="bg-white p-12 rounded-xl text-center border border-slate-200 text-slate-400">
+                      <IconBox name="fileText" className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p className="font-semibold text-slate-600">No Purchase Orders matched your search filters</p>
+                    </div>
+                  ) : (
+                    filteredPOs.map((po) => {
+                      const stageObj = FLOW_STAGES.find(s => s.id === po.status);
+                      const supplierObj = suppliers.find(s => s.id === po.supplierId);
+                      const totalLanded = po.committedCost + po.freightCost + po.customsDuty;
+                      const variance = po.budgetCost - totalLanded;
+
+                      return (
+                        <div key={po.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                          {/* PO Header Strip */}
+                          <div className="bg-slate-900 text-white p-4 sm:p-5 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                            <div className="flex items-start gap-3">
+                              <div className="bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded text-xs tracking-wider">
+                                {po.poNumber}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-base text-white">{po.title}</h4>
+                                <div className="text-xs text-slate-300 flex flex-wrap items-center gap-3 mt-0.5">
+                                  <span>Zone: <strong className="text-amber-400">{po.hotelZone}</strong></span>
+                                  <span>•</span>
+                                  <span>Category: <strong>{po.category}</strong></span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 self-end sm:self-auto">
+                              <span className="text-xs text-slate-400 font-medium">Stage:</span>
+                              <select
+                                value={po.status}
+                                onChange={(e) => handleUpdateStage(po.id, e.target.value)}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border cursor-pointer focus:outline-none ${stageObj?.color || 'bg-slate-100'}`}
+                              >
+                                {FLOW_STAGES.map(st => (
+                                  <option key={st.id} value={st.id}>{st.title}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Risk Banner if active */}
+                          {po.riskFlag && (
+                            <div className="bg-rose-50 border-b border-rose-200 px-5 py-2.5 text-xs text-rose-700 flex items-center gap-2 font-medium">
+                              <IconBox name="alertTriangle" className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                              <span><strong>Logistics Alert:</strong> {po.riskReason || 'Shipping or customs delay encountered.'}</span>
+                            </div>
+                          )}
+
+                          {/* Detail Grid Body */}
+                          <div className="p-5 space-y-5 text-xs text-slate-700">
+                            {/* Vendor & Key Metrics Row */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-slate-100">
+                              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Supplier Profile</span>
+                                <div className="font-bold text-slate-900 text-sm">{po.supplierName}</div>
+                                {supplierObj && (
+                                  <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+                                    <div>Contact: <span className="font-medium text-slate-800">{supplierObj.contact}</span></div>
+                                    <div>Email: <span className="text-slate-700">{supplierObj.email}</span></div>
+                                    <div>Phone: <span className="text-slate-700">{supplierObj.phone}</span></div>
+                                    <div>Origin: <span className="text-slate-700">{supplierObj.location}</span></div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Logistics & Tracking</span>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div>Carrier: <strong className="text-slate-800">{po.carrier}</strong></div>
+                                  <div>Tracking / BOL: <span className="font-mono text-amber-600 font-semibold">{po.trackingNo}</span></div>
+                                  <div>Vessel/Flight: <span className="text-slate-700">{po.vesselName}</span></div>
+                                  <div>Port of Entry: <span className="text-slate-700">{po.portOfEntry}</span></div>
+                                </div>
+                              </div>
+
+                              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Installation Schedule</span>
+                                <div className="space-y-1.5 text-[11px]">
+                                  <div>Ex-Factory Ship Date: <strong className="text-slate-800">{po.shipDate}</strong></div>
+                                  <div>Port Clearance ETA: <strong className="text-amber-700">{po.etaDate}</strong></div>
+                                  <div>Hotel Install Target: <strong className="text-emerald-700 font-extrabold">{po.installTargetDate}</strong></div>
+                                  <div>Requisition Issued: <span className="text-slate-500">{po.orderDate}</span></div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Itemized Table */}
+                            <div>
+                              <h5 className="font-bold text-slate-900 text-xs uppercase tracking-wide mb-2">Item Specifications & Line Items</h5>
+                              <table className="w-full text-left border-collapse border border-slate-200 rounded-xl overflow-hidden">
+                                <thead className="bg-slate-100 text-slate-600 text-[11px] font-semibold">
+                                  <tr>
+                                    <th className="p-2.5 border-b">Specification Description</th>
+                                    <th className="p-2.5 border-b text-center">Quantity</th>
+                                    <th className="p-2.5 border-b text-right">Unit Price</th>
+                                    <th className="p-2.5 border-b text-right">Extended Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                  {po.items?.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50">
+                                      <td className="p-2.5 font-semibold text-slate-800">{item.name}</td>
+                                      <td className="p-2.5 text-center">{item.qty}</td>
+                                      <td className="p-2.5 text-right">${item.unitPrice.toLocaleString()}</td>
+                                      <td className="p-2.5 text-right font-bold text-slate-900">${(item.qty * item.unitPrice).toLocaleString()}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Cost Breakdown & Variance Strip */}
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 bg-slate-100/70 rounded-xl border border-slate-200 text-center">
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase block font-semibold">Approved Budget</span>
+                                <span className="font-bold text-slate-800">${po.budgetCost.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase block font-semibold">Base Items PO</span>
+                                <span className="font-bold text-slate-800">${po.committedCost.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase block font-semibold">Freight Cost</span>
+                                <span className="font-bold text-slate-800">${po.freightCost.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase block font-semibold">Customs Duty</span>
+                                <span className="font-bold text-slate-800">${po.customsDuty.toLocaleString()}</span>
+                              </div>
+                              <div className="col-span-2 sm:col-span-1 bg-amber-500/10 rounded-lg p-1 border border-amber-500/20">
+                                <span className="text-[10px] text-amber-800 uppercase block font-bold">Total Landed Cost</span>
+                                <span className="font-black text-amber-900 text-sm">${totalLanded.toLocaleString()}</span>
+                                <div className={`text-[10px] font-bold ${variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                  {variance >= 0 ? `($${variance.toLocaleString()} under)` : `($${Math.abs(variance).toLocaleString()} over)`}
+                                </div>
+                              </div>
+                            </div>
+
+                            {po.notes && (
+                              <div className="bg-amber-50/50 p-3 rounded-lg border border-amber-200/60 text-slate-700 text-xs">
+                                <strong className="text-slate-900 block mb-0.5">Notes & Installation Instructions:</strong>
+                                {po.notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: SUPPLIERS PROFILE MANAGEMENT */}
+            {activeTab === 'suppliers' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-base">Hotel Procurement Suppliers Directory</h3>
+                    <p className="text-xs text-slate-500">Manage vendor compliance, lead times, rating metrics, and contact details.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateSupplierModal(true)}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm px-3.5 py-2 rounded-lg flex items-center gap-1.5"
+                  >
+                    <IconBox name="plus" className="w-4 h-4" /> Add New Supplier Profile
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {suppliers.map((sup) => {
+                    const activeSupplierPOs = pos.filter(p => p.supplierId === sup.id);
+                    const totalSpend = activeSupplierPOs.reduce((a, b) => a + b.committedCost + b.freightCost, 0);
+
+                    return (
+                      <div key={sup.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between hover:border-amber-400 transition-all">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                              {sup.id}
+                            </span>
+                            <span className="text-amber-500 font-extrabold text-xs flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full">
+                              ★ {sup.rating} / 5.0
+                            </span>
+                          </div>
+
+                          <h4 className="font-bold text-slate-900 text-base leading-snug">{sup.name}</h4>
+                          <p className="text-xs text-amber-600 font-medium mt-0.5">{sup.category}</p>
+
+                          <div className="mt-4 space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Primary Contact:</span>
+                              <span className="font-semibold text-slate-800">{sup.contact}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Email:</span>
+                              <span className="text-slate-700">{sup.email}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Phone:</span>
+                              <span className="text-slate-700">{sup.phone}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Factory Origin:</span>
+                              <span className="text-slate-700">{sup.location}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Avg Factory Lead Time:</span>
+                              <span className="font-medium text-slate-800">{sup.leadTimeAvg}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 border-t border-slate-100 pt-3 bg-slate-50 -mx-5 -mb-5 px-5 py-3 rounded-b-xl flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Active Hotel POs</span>
+                            <span className="font-bold text-slate-800">{activeSupplierPOs.length} POs (${totalSpend.toLocaleString()})</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSupplierFilter(sup.id);
+                              setActiveTab('dashboard');
+                            }}
+                            className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                          >
+                            View POs <IconBox name="chevronRight" className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {}
+            {/* TAB 3: SHIPPING & FREIGHT TRACKING */}
+            {activeTab === 'shipping' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <h3 className="font-bold text-slate-800 text-base">Global Freight & Port Logistics Monitor</h3>
+                  <p className="text-xs text-slate-500">Track ocean containers, customs clearances, and site unloading schedules.</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {pos.filter(p => p.status === 'transit' || p.status === 'customs' || p.status === 'production').map((po) => (
+                    <div key={po.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                      {po.riskFlag && (
+                        <div className="bg-rose-50 border-l-4 border-rose-500 p-2.5 rounded-r mb-3 text-xs text-rose-700 flex items-start gap-2">
+                          <IconBox name="alertTriangle" className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="font-bold">Logistics Delay Risk:</strong> {po.riskReason || 'Customs hold or port congestion.'}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-xs font-bold text-amber-600 uppercase tracking-wide">{po.poNumber}</span>
+                          <h4 className="font-bold text-slate-900 text-base">{po.title}</h4>
+                          <p className="text-xs text-slate-500">{po.supplierName}</p>
+                        </div>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${FLOW_STAGES.find(s=>s.id===po.status)?.color}`}>
+                          {FLOW_STAGES.find(s=>s.id===po.status)?.title}
+                        </span>
+                      </div>
+
+                      {/* Logistics Visual Steps */}
+                      <div className="mt-5 p-3 bg-slate-50 rounded-lg border border-slate-100 text-xs space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Shipping Carrier / Line:</span>
+                          <span className="font-bold text-slate-800">{po.carrier}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Bill of Lading / Tracking:</span>
+                          <span className="font-mono text-amber-600 font-semibold">{po.trackingNo}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Vessel / Vehicle Name:</span>
+                          <span className="text-slate-800 font-medium">{po.vesselName}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500">Port of Clearance:</span>
+                          <span className="text-slate-800">{po.portOfEntry}</span>
+                        </div>
+                      </div>
+
+                      {/* Timeline dates bar */}
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                        <div className="p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                          <span className="text-[10px] text-slate-400 block uppercase">Shipped Date</span>
+                          <strong className="text-slate-800">{po.shipDate}</strong>
+                        </div>
+                        <div className="p-2 bg-amber-50/50 rounded-lg border border-amber-100">
+                          <span className="text-[10px] text-amber-600 block uppercase font-bold">Estimated Port ETA</span>
+                          <strong className="text-amber-800 font-extrabold">{po.etaDate}</strong>
+                        </div>
+                        <div className="p-2 bg-emerald-50/50 rounded-lg border border-emerald-100">
+                          <span className="text-[10px] text-slate-400 block uppercase">Hotel Install Target</span>
+                          <strong className="text-slate-800">{po.installTargetDate}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {}
+            {/* TAB 4: COST & FINANCIAL MANAGEMENT */}
+            {activeTab === 'costs' && (
+              <div className="space-y-4">
+                <div className="bg-white p-5 rounded-xl border border-slate-200">
+                  <h3 className="font-bold text-slate-800 text-base mb-1">Hotel Installation Cost & Variance Analysis</h3>
+                  <p className="text-xs text-slate-500 mb-4">Detailed line-item cost tracking including base PO costs, freight logistics, and import customs duties.</p>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-600 text-[11px] uppercase font-semibold border-b border-slate-200">
+                          <th className="py-2.5 px-3">PO # & Item Title</th>
+                          <th className="py-2.5 px-3">Hotel Zone</th>
+                          <th className="py-2.5 px-3 text-right">Approved Budget</th>
+                          <th className="py-2.5 px-3 text-right">Base PO Price</th>
+                          <th className="py-2.5 px-3 text-right">Freight Cost</th>
+                          <th className="py-2.5 px-3 text-right">Customs Duty</th>
+                          <th className="py-2.5 px-3 text-right">Total Landed Cost</th>
+                          <th className="py-2.5 px-3 text-right">Variance</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {pos.map((po) => {
+                          const totalLanded = po.committedCost + po.freightCost + po.customsDuty;
+                          const variance = po.budgetCost - totalLanded;
+
+                          return (
+                            <tr key={po.id} className="hover:bg-slate-50">
+                              <td className="py-3 px-3 font-semibold text-slate-800">
+                                {po.poNumber} - <span className="font-normal text-slate-600">{po.title}</span>
+                              </td>
+                              <td className="py-3 px-3 text-slate-600">{po.hotelZone}</td>
+                              <td className="py-3 px-3 text-right text-slate-700">${po.budgetCost.toLocaleString()}</td>
+                              <td className="py-3 px-3 text-right text-slate-700">${po.committedCost.toLocaleString()}</td>
+                              <td className="py-3 px-3 text-right text-slate-700">${po.freightCost.toLocaleString()}</td>
+                              <td className="py-3 px-3 text-right text-slate-700">${po.customsDuty.toLocaleString()}</td>
+                              <td className="py-3 px-3 text-right font-bold text-slate-900">${totalLanded.toLocaleString()}</td>
+                              <td className={`py-3 px-3 text-right font-bold ${variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {variance >= 0 ? `+$${variance.toLocaleString()}` : `-$${Math.abs(variance).toLocaleString()}`}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-800 text-white font-bold text-xs">
+                          <td colSpan="2" className="py-3 px-3 text-right uppercase">Total Project Landed Summary:</td>
+                          <td className="py-3 px-3 text-right">${stats.totalBudget.toLocaleString()}</td>
+                          <td className="py-3 px-3 text-right">${pos.reduce((a,b)=>a+b.committedCost,0).toLocaleString()}</td>
+                          <td className="py-3 px-3 text-right">${pos.reduce((a,b)=>a+b.freightCost,0).toLocaleString()}</td>
+                          <td className="py-3 px-3 text-right">${pos.reduce((a,b)=>a+b.customsDuty,0).toLocaleString()}</td>
+                          <td className="py-3 px-3 text-right text-amber-400 font-extrabold">${stats.totalCommitted.toLocaleString()}</td>
+                          <td className={`py-3 px-3 text-right font-extrabold ${stats.variance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {stats.variance >= 0 ? `+$${stats.variance.toLocaleString()}` : `-$${Math.abs(stats.variance).toLocaleString()}`}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {}
+            {/* TAB 5: SITE SCHEDULE & MILESTONES */}
+            {activeTab === 'schedule' && (
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <h3 className="font-bold text-slate-800 text-base">Hotel Room Readiness & Installation Timeline</h3>
+                  <p className="text-xs text-slate-500">Target milestone tracking prior to official hotel grand opening.</p>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+                  {pos.map((po) => {
+                    const stageObj = FLOW_STAGES.find(s => s.id === po.status);
+                    return (
+                      <div key={po.id} className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                          <div>
+                            <span className="text-xs font-bold text-amber-600">{po.poNumber}</span>
+                            <h4 className="font-bold text-slate-900 text-sm">{po.title}</h4>
+                            <span className="text-xs text-slate-500">{po.hotelZone}</span>
+                          </div>
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded border self-start sm:self-auto ${stageObj?.color}`}>
+                            {stageObj?.title}
+                          </span>
+                        </div>
+
+                        {/* Milestone bar visual */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-xs pt-2 border-t border-slate-200/80">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block uppercase">Order Issued</span>
+                            <span className="font-semibold text-slate-700">{po.orderDate}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block uppercase">Factory Ex-Work</span>
+                            <span className="font-semibold text-slate-700">{po.shipDate}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block uppercase">Port Arrival ETA</span>
+                            <span className="font-semibold text-amber-700">{po.etaDate}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-400 block uppercase">Room Installation Deadline</span>
+                            <span className="font-bold text-emerald-700">{po.installTargetDate}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </main>
+
+          {}
+          {/* PO DETAIL DRAWER / MODAL */}
+          {selectedPoModal && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200">
+                <div className="p-5 bg-hotel-navy text-white rounded-t-2xl flex justify-between items-start">
+                  <div>
+                    <span className="text-xs font-bold text-amber-400">{selectedPoModal.poNumber}</span>
+                    <h3 className="text-lg font-bold text-white">{selectedPoModal.title}</h3>
+                    <p className="text-xs text-slate-300">{selectedPoModal.supplierName} • {selectedPoModal.hotelZone}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPoModal(null)}
+                    className="p-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700"
+                  >
+                    <IconBox name="x" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-5 text-xs text-slate-700">
+                  {/* Status update bar inside detail modal */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="font-bold text-slate-800">Current Lifecycle Stage:</span>
+                    <select
+                      value={selectedPoModal.status}
+                      onChange={(e) => {
+                        handleUpdateStage(selectedPoModal.id, e.target.value);
+                        setSelectedPoModal({ ...selectedPoModal, status: e.target.value });
+                      }}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-white border-amber-400 text-amber-900 focus:outline-none"
+                    >
+                      {FLOW_STAGES.map(st => (
+                        <option key={st.id} value={st.id}>{st.title}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Itemized breakdown table */}
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm mb-2">Itemized Specifications</h4>
+                    <table className="w-full text-left border-collapse border border-slate-200 rounded-lg overflow-hidden">
+                      <thead className="bg-slate-100 text-slate-600 text-[11px] font-semibold">
+                        <tr>
+                          <th className="p-2 border-b">Item Description</th>
+                          <th className="p-2 border-b text-center">Qty</th>
+                          <th className="p-2 border-b text-right">Unit Price</th>
+                          <th className="p-2 border-b text-right">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedPoModal.items?.map((item, i) => (
+                          <tr key={i}>
+                            <td className="p-2 font-medium text-slate-800">{item.name}</td>
+                            <td className="p-2 text-center">{item.qty}</td>
+                            <td className="p-2 text-right">${item.unitPrice.toLocaleString()}</td>
+                            <td className="p-2 text-right font-bold text-slate-900">${(item.qty * item.unitPrice).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Financial Summary */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-center">
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Approved Budget</span>
+                      <strong className="text-slate-800 font-bold">${selectedPoModal.budgetCost.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Base Items PO</span>
+                      <strong className="text-slate-800 font-bold">${selectedPoModal.committedCost.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Freight & Duty</span>
+                      <strong className="text-slate-800 font-bold">${(selectedPoModal.freightCost + selectedPoModal.customsDuty).toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-amber-700 font-bold uppercase block">Total Landed</span>
+                      <strong className="text-amber-900 text-sm font-black">
+                        ${(selectedPoModal.committedCost + selectedPoModal.freightCost + selectedPoModal.customsDuty).toLocaleString()}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Logistics Information */}
+                  <div className="border-t border-slate-100 pt-4 space-y-2">
+                    <h4 className="font-bold text-slate-900 text-sm">Shipping & Clearance Details</h4>
+                    <div className="grid grid-cols-2 gap-2 text-slate-600">
+                      <div><strong>Carrier:</strong> {selectedPoModal.carrier}</div>
+                      <div><strong>Tracking/BOL:</strong> {selectedPoModal.trackingNo}</div>
+                      <div><strong>Vessel/Flight:</strong> {selectedPoModal.vesselName}</div>
+                      <div><strong>Port of Entry:</strong> {selectedPoModal.portOfEntry}</div>
+                    </div>
+                  </div>
+
+                  {selectedPoModal.notes && (
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-600">
+                      <strong className="text-slate-800 block mb-1">Inspector & Site Notes:</strong>
+                      {selectedPoModal.notes}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-b-2xl border-t border-slate-200 flex justify-end">
+                  <button
+                    onClick={() => setSelectedPoModal(null)}
+                    className="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-lg text-xs"
+                  >
+                    Close Window
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* CREATE NEW PO MODAL */}
+          {showCreatePoModal && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto border border-slate-200">
+                <div className="p-5 bg-hotel-navy text-white rounded-t-2xl flex justify-between items-center">
+                  <h3 className="text-base font-bold">Issue New Hotel Purchase Order</h3>
+                  <button onClick={() => setShowCreatePoModal(false)} className="text-slate-300 hover:text-white">
+                    <IconBox name="x" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const supId = formData.get('supplierId');
+                    const supObj = suppliers.find(s => s.id === supId);
+
+                    const newPo = {
+                      id: `PO-2026-0${pos.length + 88}`,
+                      poNumber: formData.get('poNumber') || `PO-2026-0${pos.length + 88}`,
+                      title: formData.get('title'),
+                      supplierId: supId,
+                      supplierName: supObj ? supObj.name : 'Selected Vendor',
+                      hotelZone: formData.get('hotelZone'),
+                      category: formData.get('category'),
+                      status: 'draft',
+                      budgetCost: Number(formData.get('budgetCost')) || 0,
+                      committedCost: Number(formData.get('committedCost')) || 0,
+                      freightCost: Number(formData.get('freightCost')) || 0,
+                      customsDuty: Number(formData.get('customsDuty')) || 0,
+                      orderDate: new Date().toISOString().split('T')[0],
+                      shipDate: formData.get('shipDate') || '2026-09-15',
+                      etaDate: formData.get('etaDate') || '2026-10-01',
+                      installTargetDate: formData.get('installTargetDate') || '2026-10-15',
+                      carrier: formData.get('carrier') || 'Pending Logistics',
+                      trackingNo: 'TBD',
+                      vesselName: 'Pending Vessel Assignment',
+                      portOfEntry: 'Port of Long Beach',
+                      riskFlag: false,
+                      notes: formData.get('notes') || 'Newly issued PO requisition.',
+                      items: [
+                        { name: formData.get('title'), qty: 1, unitPrice: Number(formData.get('committedCost')) || 0 }
+                      ]
+                    };
+
+                    setPos([newPo, ...pos]);
+                    setShowCreatePoModal(false);
+                    triggerToast(`Created new Purchase Order ${newPo.poNumber}`);
+                  }}
+                  className="p-6 space-y-4 text-xs text-slate-700"
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-semibold block mb-1">PO Number</label>
+                      <input
+                        required
+                        type="text"
+                        name="poNumber"
+                        defaultValue={`PO-2026-0${pos.length + 88}`}
+                        className="w-full p-2 border border-slate-300 rounded-lg bg-slate-50 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Select Supplier Profile</label>
+                      <select name="supplierId" required className="w-full p-2 border border-slate-300 rounded-lg bg-white">
+                        {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1">PO Title / Scope of Delivery</label>
+                    <input required type="text" name="title" placeholder="e.g. Guestroom Mini-Bar Refrigerators" className="w-full p-2 border border-slate-300 rounded-lg" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-semibold block mb-1">Hotel Zone / Location</label>
+                      <input required type="text" name="hotelZone" placeholder="e.g. Guestroom Tower A" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Category Tag</label>
+                      <input required type="text" name="category" placeholder="e.g. FF&E, OS&E, IT/AV" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="font-semibold block mb-1">Approved Budget ($)</label>
+                      <input required type="number" name="budgetCost" placeholder="50000" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Base PO Cost ($)</label>
+                      <input required type="number" name="committedCost" placeholder="48000" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Est. Freight ($)</label>
+                      <input type="number" name="freightCost" defaultValue="3000" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Est. Duty ($)</label>
+                      <input type="number" name="customsDuty" defaultValue="1500" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="font-semibold block mb-1">Ex-Factory Ship Date</label>
+                      <input type="date" name="shipDate" defaultValue="2026-09-15" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Port ETA</label>
+                      <input type="date" name="etaDate" defaultValue="2026-10-01" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Install Target Date</label>
+                      <input type="date" name="installTargetDate" defaultValue="2026-10-15" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1">Preferred Carrier / Logistics Partner</label>
+                    <input type="text" name="carrier" placeholder="e.g. Kuehne+Nagel / DHL Freight" className="w-full p-2 border border-slate-300 rounded-lg" />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1">Notes / Installation Specs</label>
+                    <textarea name="notes" rows="2" placeholder="Special handling or staging instructions..." className="w-full p-2 border border-slate-300 rounded-lg"></textarea>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                    <button type="button" onClick={() => setShowCreatePoModal(false)} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700">Cancel</button>
+                    <button type="submit" className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold">Generate PO Requisition</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {}
+          {/* CREATE NEW SUPPLIER MODAL */}
+          {showCreateSupplierModal && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200">
+                <div className="p-5 bg-hotel-navy text-white rounded-t-2xl flex justify-between items-center">
+                  <h3 className="text-base font-bold">Register New Supplier Profile</h3>
+                  <button onClick={() => setShowCreateSupplierModal(false)} className="text-slate-300 hover:text-white">
+                    <IconBox name="x" className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    const newSup = {
+                      id: `SUP-00${suppliers.length + 1}`,
+                      name: formData.get('name'),
+                      category: formData.get('category'),
+                      contact: formData.get('contact'),
+                      email: formData.get('email'),
+                      phone: formData.get('phone'),
+                      rating: 4.5,
+                      location: formData.get('location'),
+                      leadTimeAvg: formData.get('leadTimeAvg') || '30 Days',
+                      status: 'Approved'
+                    };
+
+                    setSuppliers([...suppliers, newSup]);
+                    setShowCreateSupplierModal(false);
+                    triggerToast(`Added vendor profile: ${newSup.name}`);
+                  }}
+                  className="p-6 space-y-3 text-xs text-slate-700"
+                >
+                  <div>
+                    <label className="font-semibold block mb-1">Company / Supplier Name</label>
+                    <input required type="text" name="name" placeholder="e.g. Regency Marble & Tile Co." className="w-full p-2 border border-slate-300 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="font-semibold block mb-1">Product Category</label>
+                    <input required type="text" name="category" placeholder="e.g. Flooring & Stonework" className="w-full p-2 border border-slate-300 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="font-semibold block mb-1">Primary Representative Contact</label>
+                    <input required type="text" name="contact" placeholder="e.g. Robert Smith" className="w-full p-2 border border-slate-300 rounded-lg" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold block mb-1">Email</label>
+                      <input required type="email" name="email" placeholder="rsmith@vendor.com" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Phone</label>
+                      <input required type="text" name="phone" placeholder="+1 (555) 000-0000" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-semibold block mb-1">Factory Location</label>
+                      <input required type="text" name="location" placeholder="e.g. Verona, Italy" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="font-semibold block mb-1">Avg Lead Time</label>
+                      <input type="text" name="leadTimeAvg" placeholder="e.g. 45 Days" className="w-full p-2 border border-slate-300 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+                    <button type="button" onClick={() => setShowCreateSupplierModal(false)} className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700">Cancel</button>
+                    <button type="submit" className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold">Save Supplier Profile</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
